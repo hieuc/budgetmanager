@@ -3,6 +3,8 @@ package view;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.util.List;
+
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -17,11 +19,13 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.border.EmptyBorder;
 
-import fucntions.F;
+import functions.F;
 
 public class ViewGUI extends JFrame{
     /** Generated serial ID. */
     private static final long serialVersionUID = -8446679627136328719L;
+    
+    private static final String LINE_FORMAT = "- %-60s $%10.2f %20s ";
     
     /** Writing mode. 0 = not initialized, 1 = deposit, 2 = deduction. */
     private int mode;
@@ -110,6 +114,25 @@ public class ViewGUI extends JFrame{
         left.add(monthSum);
         left.add(Box.createRigidArea(new Dimension(0, 10)));
         final JButton totalSum = new JButton("Total Summary");
+        totalSum.addActionListener(e -> {
+            List<String> lines = F.readDeduct();
+            outputLog.append("TOTAL DEDUCTION:");
+            outputLog.append("\n");
+            lines.forEach(s -> {
+                final String[] data = F.parseLine(s);
+                outputLog.append(String.format(LINE_FORMAT, data[0].trim(), Double.valueOf(data[1].trim()), data[2].trim()));
+                outputLog.append("\n");
+            });
+            outputLog.append("\n");
+            outputLog.append("TOTAL DEPOSIT:");
+            outputLog.append("\n");
+            lines = F.readDepos();
+            lines.forEach(s -> {
+                final String[] data = F.parseLine(s);
+                outputLog.append(String.format(LINE_FORMAT, data[0].trim(), Double.valueOf(data[1].trim()), data[2].trim()));
+                outputLog.append("\n");
+            });
+        });
         left.add(totalSum);
         left.add(Box.createRigidArea(new Dimension(0, 10)));
         final JButton editDepos = new JButton("Edit Deposit");

@@ -8,7 +8,7 @@ import view.ViewGUI;
  * 
  * @author Victor 
  */
-public class MoneyMain { 
+public final class MoneyMain { 
     
     /**
      * Private constructor. Do nothing.
