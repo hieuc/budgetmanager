@@ -31,9 +31,14 @@ public class ViewGUI extends JFrame{
     /** Generated serial ID. */
     private static final long serialVersionUID = -8446679627136328719L;
     
+    /** General format of a data file in format : comment-price-date. */
     private static final String LINE_FORMAT = "- %-60s $%10.2f %20s ";
     
-    private static final Color DEFAULT_TEXT_COLOR = Color.BLACK;
+    /** Default text color of log text. */
+    private static final Color DEFAULT_TEXT_COLOR = Color.LIGHT_GRAY;
+    
+    /** Background color for log text area. */
+    private static final Color TEXTBOX_BACKGROUND_COLOR = new Color(13, 4, 26);  // Black purple-ish
     
     /** Writing mode. 0 = not initialized, 1 = deposit, 2 = deduction. */
     private int mode;
@@ -65,7 +70,7 @@ public class ViewGUI extends JFrame{
     
     private void setProperties() {
         this.setTitle("money manager i guess");
-        this.setSize(800, 350);
+        this.setSize(800, 500);
         this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         this.setResizable(true);
         this.setLocationRelativeTo(null);
@@ -125,10 +130,10 @@ public class ViewGUI extends JFrame{
         totalSum.addActionListener(e -> { 
             appendText("Displaying total summary...\n", Color.GREEN);
             appendText("TOTAL DEDUCTION:\n", Color.RED);
-            displayDeduct();
+            displayDeduct(true);
             appendText("----------------------------------\n", DEFAULT_TEXT_COLOR);
             appendText("TOTAL DEPOSIT:\n", Color.RED);
-            displayDepos();
+            displayDepos(true);
             outputLog.setEditable(false);
         });
         left.add(totalSum);
@@ -136,7 +141,7 @@ public class ViewGUI extends JFrame{
         final JButton editDepos = new JButton("Edit Deposit");
         editDepos.addActionListener(e -> {
             outputLog.setText("");
-            displayDepos();
+            displayDepos(false);
             outputLog.setEditable(true);
         });
         left.add(editDepos);
@@ -144,7 +149,7 @@ public class ViewGUI extends JFrame{
         final JButton editDeduct = new JButton("Edit Deduction");
         editDeduct.addActionListener(e -> {
             outputLog.setText("");
-            displayDeduct();
+            displayDeduct(false);
             outputLog.setEditable(true);
         });
         left.add(editDeduct);
@@ -158,6 +163,8 @@ public class ViewGUI extends JFrame{
         final JPanel mid = new JPanel(new BorderLayout());
         mid.setBorder(BorderFactory.createEtchedBorder());
         outputLog = new JTextPane();
+        outputLog.setBackground(TEXTBOX_BACKGROUND_COLOR);
+        outputLog.setForeground(DEFAULT_TEXT_COLOR);
         outputLog.setFont(new Font("monospaced", Font.PLAIN, 12));
         
         //outputLog.setLineWrap(true);
@@ -196,7 +203,7 @@ public class ViewGUI extends JFrame{
      * @param text string t append
      * @param color color of text
      */
-    private void appendText(final String text, Color color) {
+    private void appendText(final String text, final Color color) {
         final Document doc = outputLog.getStyledDocument();
         final Style style = outputLog.addStyle(null, null);
         StyleConstants.setForeground(style, color);
@@ -209,18 +216,30 @@ public class ViewGUI extends JFrame{
     
     /**
      * Append deduction text to the log panel.
+     * 
+     * @param displaySum true to display sum, false otherwise
      */
-    private void displayDeduct() {
+    private void displayDeduct(final boolean displaySum) {
         final List<String> lines = F.readDeduct();
         displayTextChunk(lines);
+        if (displaySum) {
+            appendText(String.format(" " + LINE_FORMAT.replace("-", ""),
+                    "TOTAL:", F.calcTotal(lines), ""), Color.RED);
+        }
     }
     
     /**
      * Append deposit text to the log panel.
+     * 
+     * @param displaySum true to display sum, false otherwise
      */
-    private void displayDepos() {
+    private void displayDepos(final boolean displaySum) {
         final List<String> lines = F.readDepos();
         displayTextChunk(lines);
+        if (displaySum) {
+            appendText(String.format(" " + LINE_FORMAT.replace("-", ""),
+                    "TOTAL:", F.calcTotal(lines), ""), Color.RED);
+        }
     }
     
     /**

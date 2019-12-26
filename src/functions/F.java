@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
@@ -16,17 +17,22 @@ import java.util.stream.Collectors;
  * @version December 2019
  */
 public final class F {
-    
+    /** Root path to data files. */
     private static final String ROOT_PATH = System.getProperty("user.dir") + "/data";
     
+    /** Path to deposit file. */
     private static final String DEPOS_PATH = ROOT_PATH + "/deposit.txt";
     
+    /** Path to deduction file. */
     private static final String DEDUCT_PATH = ROOT_PATH + "/deduction.txt";
     
+    /** Line separator character. */
     private static final String LINE_SEPARATOR = "\\|";
     
+    /** Reader handles inputs from files. */
     private static BufferedReader reader;
     
+    /** Writer handles writing to files. */
     private static BufferedWriter writer;
     
     /**
@@ -66,6 +72,20 @@ public final class F {
      */
     public static String[] parseLine(final String line) {
         return line.split(LINE_SEPARATOR);
+    }
+    
+    /**
+     * Calculate total price from list of lines.
+     * 
+     * @param lines of either deduction or deposit
+     * @return calculated sum
+     */
+    public static double calcTotal(final List<String> lines) {
+        double sum = 0;
+        for (final String s : lines) {
+            sum += Double.valueOf(parseLine(s)[1]);
+        }
+        return sum;
     }
     
     /**
