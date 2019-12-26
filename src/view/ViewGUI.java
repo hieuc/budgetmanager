@@ -3,6 +3,7 @@ package view;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Font;
 import java.util.List;
 
 import javax.swing.BorderFactory;
@@ -17,7 +18,12 @@ import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.JTextPane;
 import javax.swing.border.EmptyBorder;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.Document;
+import javax.swing.text.Style;
+import javax.swing.text.StyleConstants;
 
 import functions.F;
 
@@ -26,6 +32,8 @@ public class ViewGUI extends JFrame{
     private static final long serialVersionUID = -8446679627136328719L;
     
     private static final String LINE_FORMAT = "- %-60s $%10.2f %20s ";
+    
+    private static final Color DEFAULT_TEXT_COLOR = Color.BLACK;
     
     /** Writing mode. 0 = not initialized, 1 = deposit, 2 = deduction. */
     private int mode;
@@ -37,7 +45,7 @@ public class ViewGUI extends JFrame{
     private JLabel warningLabel;
     
     /** Text area displays log. */
-    private JTextArea outputLog;
+    private JTextPane outputLog;
     
     /** Input text for price. */
     private JTextField inputPrice;
@@ -57,7 +65,7 @@ public class ViewGUI extends JFrame{
     
     private void setProperties() {
         this.setTitle("money manager i guess");
-        this.setSize(650, 350);
+        this.setSize(800, 350);
         this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         this.setResizable(true);
         this.setLocationRelativeTo(null);
@@ -99,7 +107,7 @@ public class ViewGUI extends JFrame{
         
         top.add(new JLabel("Comment:"));
         inputComment = new JTextField("");
-        inputComment.setColumns(20);
+        inputComment.setColumns(30);
         top.add(inputComment);
         
         return top;
@@ -114,31 +122,31 @@ public class ViewGUI extends JFrame{
         left.add(monthSum);
         left.add(Box.createRigidArea(new Dimension(0, 10)));
         final JButton totalSum = new JButton("Total Summary");
-        totalSum.addActionListener(e -> {
-            List<String> lines = F.readDeduct();
-            outputLog.append("TOTAL DEDUCTION:");
-            outputLog.append("\n");
-            lines.forEach(s -> {
-                final String[] data = F.parseLine(s);
-                outputLog.append(String.format(LINE_FORMAT, data[0].trim(), Double.valueOf(data[1].trim()), data[2].trim()));
-                outputLog.append("\n");
-            });
-            outputLog.append("\n");
-            outputLog.append("TOTAL DEPOSIT:");
-            outputLog.append("\n");
-            lines = F.readDepos();
-            lines.forEach(s -> {
-                final String[] data = F.parseLine(s);
-                outputLog.append(String.format(LINE_FORMAT, data[0].trim(), Double.valueOf(data[1].trim()), data[2].trim()));
-                outputLog.append("\n");
-            });
+        totalSum.addActionListener(e -> { 
+            appendText("Displaying total summary...\n", Color.GREEN);
+            appendText("TOTAL DEDUCTION:\n", Color.RED);
+            displayDeduct();
+            appendText("----------------------------------\n", DEFAULT_TEXT_COLOR);
+            appendText("TOTAL DEPOSIT:\n", Color.RED);
+            displayDepos();
+            outputLog.setEditable(false);
         });
         left.add(totalSum);
         left.add(Box.createRigidArea(new Dimension(0, 10)));
         final JButton editDepos = new JButton("Edit Deposit");
+        editDepos.addActionListener(e -> {
+            outputLog.setText("");
+            displayDepos();
+            outputLog.setEditable(true);
+        });
         left.add(editDepos);
         left.add(Box.createRigidArea(new Dimension(0, 10)));
         final JButton editDeduct = new JButton("Edit Deduction");
+        editDeduct.addActionListener(e -> {
+            outputLog.setText("");
+            displayDeduct();
+            outputLog.setEditable(true);
+        });
         left.add(editDeduct);
         left.add(Box.createRigidArea(new Dimension(0, 10)));
         final JButton delLine = new JButton("Delete Line");
@@ -149,11 +157,14 @@ public class ViewGUI extends JFrame{
     private JPanel makeMidPane() {
         final JPanel mid = new JPanel(new BorderLayout());
         mid.setBorder(BorderFactory.createEtchedBorder());
-        outputLog = new JTextArea();
-        outputLog.setLineWrap(true);
+        outputLog = new JTextPane();
+        outputLog.setFont(new Font("monospaced", Font.PLAIN, 12));
+        
+        //outputLog.setLineWrap(true);
+        //outputLog.setEditable(false);
         mid.add(outputLog, BorderLayout.CENTER);
         final JScrollPane scroll = new JScrollPane(outputLog, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
-                JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+                JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         mid.add(scroll);
         return mid;
     }
@@ -177,5 +188,52 @@ public class ViewGUI extends JFrame{
     private void initFields() {
         mode = 0;
         editMode = false;
+    }
+    
+    /**
+     * Append text with custom color to the log panel. 
+     * 
+     * @param text string t append
+     * @param color color of text
+     */
+    private void appendText(final String text, Color color) {
+        final Document doc = outputLog.getStyledDocument();
+        final Style style = outputLog.addStyle(null, null);
+        StyleConstants.setForeground(style, color);
+        try {
+            doc.insertString(doc.getLength(), text, style);
+        } catch (BadLocationException e) {
+            e.printStackTrace();
+        }   
+    }
+    
+    /**
+     * Append deduction text to the log panel.
+     */
+    private void displayDeduct() {
+        final List<String> lines = F.readDeduct();
+        displayTextChunk(lines);
+    }
+    
+    /**
+     * Append deposit text to the log panel.
+     */
+    private void displayDepos() {
+        final List<String> lines = F.readDepos();
+        displayTextChunk(lines);
+    }
+    
+    /**
+     * Display a lot of text. Helper method for displayDeduct and displayDepos.
+     * 
+     * @param lines of text.
+     */
+    private void displayTextChunk(final List<String> lines) {
+        lines.forEach(s -> {
+            final String[] data = F.parseLine(s);
+            final String text = String.format(LINE_FORMAT, data[0].trim(), Double.valueOf(data[1].trim()), data[2].trim());
+            appendText(text, DEFAULT_TEXT_COLOR);
+            appendText("\n", DEFAULT_TEXT_COLOR);
+        });
     }
 }
