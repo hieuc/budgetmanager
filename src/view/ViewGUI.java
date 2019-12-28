@@ -4,6 +4,7 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import javax.swing.BorderFactory;
@@ -57,6 +58,9 @@ public class ViewGUI extends JFrame{
     
     /** Input text for comment, */
     private JTextField inputComment;
+    
+    /** Input text for selecting month summary. */
+    private JTextField inputMonth;
 
     /**
      * Init fields.
@@ -122,16 +126,37 @@ public class ViewGUI extends JFrame{
         final JPanel left = new JPanel();
         left.setBorder(new EmptyBorder(5, 5, 5, 5));
         left.setLayout(new BoxLayout(left, BoxLayout.Y_AXIS));
-        left.add(Box.createRigidArea(new Dimension(0, 20)));
         final JButton monthSum = new JButton("Monthly Summary");
+        monthSum.addActionListener(e -> {
+            final int currentMonth = LocalDateTime.now().getMonthValue();
+            appendText("Displaying monthly summary...\n", Color.GREEN);
+            appendText("TOTAL DEDUCTION:\n", Color.RED);
+            displayTextChunk(F.readDeductMonth(currentMonth), true);
+            appendText("----------------------------------\n");
+            appendText("TOTAL DEPOSIT:\n", Color.RED);
+            displayTextChunk(F.readDeposMonth(currentMonth), true);
+            outputLog.setEditable(false);
+        });
         left.add(monthSum);
+        //-------------------------- WORKING ON THIS PART
+        final JLabel monthSumLabel = new JLabel("Select month:");
+        left.add(monthSumLabel);
+        inputMonth = new JTextField("");
+        inputMonth.setColumns(2);
+        left.add(inputMonth);
+        final JButton monthSumConfirm = new JButton("OK");
+        monthSumConfirm.addActionListener(e -> {
+            
+        });
+        left.add(monthSumConfirm);
+        //------------------------------
         left.add(Box.createRigidArea(new Dimension(0, 10)));
         final JButton totalSum = new JButton("Total Summary");
         totalSum.addActionListener(e -> { 
             appendText("Displaying total summary...\n", Color.GREEN);
             appendText("TOTAL DEDUCTION:\n", Color.RED);
             displayDeduct(true);
-            appendText("----------------------------------\n", DEFAULT_TEXT_COLOR);
+            appendText("----------------------------------\n");
             appendText("TOTAL DEPOSIT:\n", Color.RED);
             displayDepos(true);
             outputLog.setEditable(false);
@@ -165,10 +190,8 @@ public class ViewGUI extends JFrame{
         outputLog = new JTextPane();
         outputLog.setBackground(TEXTBOX_BACKGROUND_COLOR);
         outputLog.setForeground(DEFAULT_TEXT_COLOR);
+        outputLog.setCaretColor(DEFAULT_TEXT_COLOR);
         outputLog.setFont(new Font("monospaced", Font.PLAIN, 12));
-        
-        //outputLog.setLineWrap(true);
-        //outputLog.setEditable(false);
         mid.add(outputLog, BorderLayout.CENTER);
         final JScrollPane scroll = new JScrollPane(outputLog, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
                 JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
@@ -198,10 +221,19 @@ public class ViewGUI extends JFrame{
     }
     
     /**
+     * Append text with default color to the log panel.
+     * 
+     * @param text string to append
+     */
+    private void appendText(final String text) {
+        appendText(text, DEFAULT_TEXT_COLOR);
+    }
+    
+    /**
      * Append text with custom color to the log panel. 
      * 
-     * @param text string t append
-     * @param color color of text
+     * @param text string to append
+     * @param color color of text 
      */
     private void appendText(final String text, final Color color) {
         final Document doc = outputLog.getStyledDocument();
@@ -220,12 +252,7 @@ public class ViewGUI extends JFrame{
      * @param displaySum true to display sum, false otherwise
      */
     private void displayDeduct(final boolean displaySum) {
-        final List<String> lines = F.readDeduct();
-        displayTextChunk(lines);
-        if (displaySum) {
-            appendText(String.format(" " + LINE_FORMAT.replace("-", ""),
-                    "TOTAL:", F.calcTotal(lines), ""), Color.RED);
-        }
+        displayTextChunk(F.readDeduct(), displaySum);
     }
     
     /**
@@ -234,25 +261,31 @@ public class ViewGUI extends JFrame{
      * @param displaySum true to display sum, false otherwise
      */
     private void displayDepos(final boolean displaySum) {
-        final List<String> lines = F.readDepos();
-        displayTextChunk(lines);
-        if (displaySum) {
-            appendText(String.format(" " + LINE_FORMAT.replace("-", ""),
-                    "TOTAL:", F.calcTotal(lines), ""), Color.RED);
-        }
+        displayTextChunk(F.readDepos(), displaySum);
     }
     
     /**
      * Display a lot of text. Helper method for displayDeduct and displayDepos.
      * 
      * @param lines of text.
+     * @param displaySum true to display sum, false otherwise
      */
-    private void displayTextChunk(final List<String> lines) {
-        lines.forEach(s -> {
-            final String[] data = F.parseLine(s);
-            final String text = String.format(LINE_FORMAT, data[0].trim(), Double.valueOf(data[1].trim()), data[2].trim());
-            appendText(text, DEFAULT_TEXT_COLOR);
-            appendText("\n", DEFAULT_TEXT_COLOR);
-        });
+    private void displayTextChunk(final List<String> lines, final boolean displaySum) {
+        try {
+            lines.forEach(s -> {
+                final String[] data = F.parseLine(s);
+                final String text = String.format(LINE_FORMAT, data[0].trim(), Double.valueOf(data[1].trim()), data[2].trim());
+                appendText(text);
+                appendText("\n");
+            });
+            
+            if (displaySum) {
+                appendText(String.format(" " + LINE_FORMAT.replace("-", ""),
+                        "TOTAL:", F.calcTotal(lines), ""), Color.RED);
+            }
+        } catch (IndexOutOfBoundsException e) {
+            appendText("Data not found!");
+        }
+        appendText("\n");
     }
 }

@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -86,6 +88,56 @@ public final class F {
             sum += Double.valueOf(parseLine(s)[1]);
         }
         return sum;
+    }
+    
+    public static List<String> readDeductMonth(final int month){
+        return readMonth(readDeduct(), month);
+    }
+    
+    public static List<String> readDeposMonth(final int month){
+        return readMonth(readDepos(), month);
+    }
+    
+    private static List<String> readMonth(final List<String> lines, final int month) {
+        int index = binSearch(lines, 0, lines.size() - 1, month);
+        // Look for smallest index
+        
+        if (index == -1) {
+            return Arrays.asList("Data not found!");
+        }
+        
+        while (getMonth(lines.get(index - 1)) == month) {
+            index--;
+        }
+        return new ArrayList<String>(lines.subList(index, lines.size()));
+    }
+    
+    private static int binSearch(final List<String> lines, final int l, final int r, final int target) {
+        if (r >= l) {
+            int mid = l + (r - 1) / 2;
+            
+            // Target is at the middle
+            if (mid >= l && mid <= r) {
+                if (getMonth(lines.get(mid)) == target) {
+                    return mid;
+                }
+                
+                // Target is smaller than mid
+                if (target < getMonth(lines.get(mid))) {
+                    return binSearch(lines, l, mid - 1, target);
+                }
+                
+                // Target is larger than mid
+                return binSearch(lines, mid + 1, r, target); 
+            }
+        }
+        
+        // Target not found
+        return -1;
+    }
+    
+    private static int getMonth(final String s) {
+        return Integer.valueOf(parseLine(s)[2].split("-")[1]);
     }
     
     /**
