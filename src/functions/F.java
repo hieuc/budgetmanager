@@ -90,49 +90,82 @@ public final class F {
         return sum;
     }
     
-    public static List<String> readDeductMonth(final int month){
-        return readMonth(readDeduct(), month);
+    public static List<String> readDeductMonth(final int month, final int year){
+        return readMonth(readDeduct(), month, year);
     }
     
-    public static List<String> readDeposMonth(final int month){
-        return readMonth(readDepos(), month);
+    public static List<String> readDeposMonth(final int month, final int year){
+        return readMonth(readDepos(), month, year);
     }
     
     /*
      * NOTE: readmonth should be able to handle year input.
      * flow: binary search for year, find start and end index, binary search for month, find start and end index.
      */
-    private static List<String> readMonth(final List<String> lines, final int month) {
-        int index = binSearch(lines, 0, lines.size() - 1, month);
-        // Look for smallest index
-        
+    private static List<String> readMonth(final List<String> lines, final int month, final int year) {
+        // search for year index
+        int index = binSearch(lines, 0, lines.size() - 1, year, false);
         if (index == -1) {
             return Arrays.asList("Data not found!");
         }
         
-        while (getMonth(lines.get(index - 1)) == month) {
-            index--;
+        // search index range
+        int lower = index;
+        int upper = index;
+        while (getMY(lines.get(lower - 1), false) == year) {
+            lower--;
         }
-        return new ArrayList<String>(lines.subList(index, lines.size()));
+        while (upper < lines.size() - 1 && getMY(lines.get(upper + 1), false) == year) {
+            upper++;
+        }
+        
+        // search for month index
+        index = binSearch(lines, lower, upper, month, true);
+        if (index == -1) {
+            return Arrays.asList("Data not found!");
+        }
+        // search for index range 
+        lower = index;
+        upper = index;
+        while (getMY(lines.get(lower - 1), true) == month) {
+            lower--;
+        }
+        while (upper < lines.size() - 1 && getMY(lines.get(upper + 1), true) == month) {
+            upper++;
+        }
+        
+        return new ArrayList<String>(lines.subList(lower, upper + 1));
     }
     
-    private static int binSearch(final List<String> lines, final int l, final int r, final int target) {
+    /**
+     * Binary search to final target month/year.
+     * 
+     * @param lines list of lines in the pool to search
+     * @param l left bound
+     * @param r right bound
+     * @param target target value
+     * @param m true if searching for month, false if searching for year
+     * @return index of target
+     */
+    private static int binSearch(final List<String> lines, final int l, final int r,
+            final int target, final boolean m) {
         if (r >= l) {
-            int mid = l + (r - 1) / 2;
-            
+            final int mid = (l + r) / 2;
             // Target is at the middle
             if (mid >= l && mid <= r) {
-                if (getMonth(lines.get(mid)) == target) {
+                final int value = getMY(lines.get(mid), m);
+                
+                if (value == target) {
                     return mid;
                 }
                 
                 // Target is smaller than mid
-                if (target < getMonth(lines.get(mid))) {
-                    return binSearch(lines, l, mid - 1, target);
+                if (target < value) {
+                    return binSearch(lines, l, mid - 1, target, m);
                 }
                 
                 // Target is larger than mid
-                return binSearch(lines, mid + 1, r, target); 
+                return binSearch(lines, mid + 1, r, target, m); 
             }
         }
         
@@ -140,8 +173,18 @@ public final class F {
         return -1;
     }
     
-    private static int getMonth(final String s) {
-        return Integer.valueOf(parseLine(s)[2].split("-")[1]);
+    /**
+     * Get month/year value from a line.
+     * 
+     * @param s line as a String.
+     * @param m true if returning month, year otherwise
+     * @return int value
+     */
+    private static int getMY(final String s, final boolean m) {
+        if (m) { // month
+            return Integer.valueOf(parseLine(s)[2].split("-")[1]);
+        } // year
+        return Integer.valueOf(parseLine(s)[2].split("-")[0].trim());
     }
     
     /**

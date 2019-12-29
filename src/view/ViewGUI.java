@@ -18,7 +18,6 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.JTextPane;
 import javax.swing.border.EmptyBorder;
@@ -138,8 +137,10 @@ public class ViewGUI extends JFrame{
         left.setLayout(new BoxLayout(left, BoxLayout.Y_AXIS));
         final JButton monthSum = new JButton("Monthly Summary");
         monthSum.addActionListener(e -> {
+            appendText("Displaying monthly summary...\n", Color.GREEN);
             final int currentMonth = LocalDateTime.now().getMonthValue();
-            displayMonthSum(currentMonth);
+            final int currentYear = LocalDateTime.now().getYear();
+            displayMonthSum(currentMonth, currentYear);
         });
         left.add(monthSum);
         left.add(Box.createRigidArea(new Dimension(0, 5)));
@@ -150,15 +151,18 @@ public class ViewGUI extends JFrame{
         inputMonth.setColumns(2);
         monthPanel.add(inputMonth);
         monthPanel.add(new JLabel("/"));
-        inputYear = new JTextField("");
-        inputYear.setColumns(4);
+        inputYear = new JTextField(String.valueOf(LocalDateTime.now().getYear()));
+        inputYear.setColumns(3);
         monthPanel.add(inputYear);
         final JButton monthConfirm = new JButton("OK");
         monthConfirm.addActionListener(e -> {
-            if (inputMonth.getText().matches("-?\\d+")) { // if  month is an integer
-                // WIP
-            } else {
-                appendText("Invalid input!", Color.RED);
+            try {
+                appendText("Displaying monthly summary...\n", Color.GREEN);
+                final int month = Integer.valueOf(inputMonth.getText());
+                final int year = Integer.valueOf(inputYear.getText());
+                displayMonthSum(month, year);
+            } catch (NumberFormatException e1) {
+                appendText("Wrong format of input date.\n", Color.RED);
             }
         });
         monthPanel.add(monthConfirm);
@@ -166,16 +170,18 @@ public class ViewGUI extends JFrame{
         monthPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         left.add(Box.createHorizontalGlue());
         left.add(monthPanel);
-        //------------------------------
         left.add(Box.createRigidArea(new Dimension(0, 10)));
         final JButton totalSum = new JButton("Total Summary");
         totalSum.addActionListener(e -> { 
+            double net = 0;
             appendText("Displaying total summary...\n", Color.GREEN);
             appendText("TOTAL DEDUCTION:\n", Color.RED);
-            displayDeduct(true);
+            net -= displayDeduct(true);
             appendText("----------------------------------\n");
             appendText("TOTAL DEPOSIT:\n", Color.RED);
-            displayDepos(true);
+            net += displayDepos(true);
+            appendText(String.format(" " + LINE_FORMAT.replace("-", ""),
+                    "NET:", net, ""), Color.RED);
             outputLog.setEditable(false);
         });
         left.add(totalSum);
@@ -272,8 +278,8 @@ public class ViewGUI extends JFrame{
      * 
      * @param displaySum true to display sum, false otherwise
      */
-    private void displayDeduct(final boolean displaySum) {
-        displayTextChunk(F.readDeduct(), displaySum);
+    private double displayDeduct(final boolean displaySum) {
+        return displayTextChunk(F.readDeduct(), displaySum);
     }
     
     /**
@@ -281,8 +287,8 @@ public class ViewGUI extends JFrame{
      * 
      * @param displaySum true to display sum, false otherwise
      */
-    private void displayDepos(final boolean displaySum) {
-        displayTextChunk(F.readDepos(), displaySum);
+    private double displayDepos(final boolean displaySum) {
+        return displayTextChunk(F.readDepos(), displaySum);
     }
     
     /**
@@ -291,7 +297,8 @@ public class ViewGUI extends JFrame{
      * @param lines of text.
      * @param displaySum true to display sum, false otherwise
      */
-    private void displayTextChunk(final List<String> lines, final boolean displaySum) {
+    private double displayTextChunk(final List<String> lines, final boolean displaySum) {
+        double price = 0;
         try {
             lines.forEach(s -> {
                 final String[] data = F.parseLine(s);
@@ -301,13 +308,15 @@ public class ViewGUI extends JFrame{
             });
             
             if (displaySum) {
+                price = F.calcTotal(lines);
                 appendText(String.format(" " + LINE_FORMAT.replace("-", ""),
-                        "TOTAL:", F.calcTotal(lines), ""), Color.RED);
+                        "TOTAL:", price, ""), Color.RED);
             }
         } catch (IndexOutOfBoundsException e) {
             appendText("Data not found!");
         }
         appendText("\n");
+        return price;
     }
     
     /**
@@ -315,13 +324,16 @@ public class ViewGUI extends JFrame{
      * 
      * @param month selected
      */
-    private void displayMonthSum(final int month) {
-        appendText("Displaying monthly summary...\n", Color.GREEN);
+    private void displayMonthSum(final int month, final int year) {
+        final boolean displaySum = true;
+        double net = 0;
         appendText("TOTAL DEDUCTION:\n", Color.RED);
-        displayTextChunk(F.readDeductMonth(month), true);
+        net -= displayTextChunk(F.readDeductMonth(month, year), displaySum);
         appendText("----------------------------------\n");
         appendText("TOTAL DEPOSIT:\n", Color.RED);
-        displayTextChunk(F.readDeposMonth(month), true);
+        net += displayTextChunk(F.readDeposMonth(month, year), displaySum);
+        appendText(String.format(" " + LINE_FORMAT.replace("-", ""),
+                "NET:", net, ""), Color.RED);
         outputLog.setEditable(false);
     }
 }
