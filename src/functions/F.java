@@ -98,6 +98,10 @@ public final class F {
         return readMonth(readDepos(), month);
     }
     
+    /*
+     * NOTE: readmonth should be able to handle year input.
+     * flow: binary search for year, find start and end index, binary search for month, find start and end index.
+     */
     private static List<String> readMonth(final List<String> lines, final int month) {
         int index = binSearch(lines, 0, lines.size() - 1, month);
         // Look for smallest index

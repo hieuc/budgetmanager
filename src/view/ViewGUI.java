@@ -2,6 +2,7 @@ package view;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.time.LocalDateTime;
@@ -61,6 +62,9 @@ public class ViewGUI extends JFrame{
     
     /** Input text for selecting month summary. */
     private JTextField inputMonth;
+    
+    /** Input text for selecting year summary. */
+    private JTextField inputYear;
 
     /**
      * Init fields.
@@ -107,7 +111,7 @@ public class ViewGUI extends JFrame{
         top.add(depos);
         top.add(deduct);
         // add space
-        top.add(Box.createRigidArea(new Dimension(70, 0)));
+        top.add(Box.createRigidArea(new Dimension(55, 0)));
         
         top.add(new JLabel("Price:"));
         inputPrice = new JTextField("");
@@ -119,6 +123,12 @@ public class ViewGUI extends JFrame{
         inputComment.setColumns(30);
         top.add(inputComment);
         
+        final JButton ok = new JButton("OK");
+        ok.addActionListener(e -> {
+            
+        });
+        top.add(ok);
+        
         return top;
     }
     
@@ -129,26 +139,33 @@ public class ViewGUI extends JFrame{
         final JButton monthSum = new JButton("Monthly Summary");
         monthSum.addActionListener(e -> {
             final int currentMonth = LocalDateTime.now().getMonthValue();
-            appendText("Displaying monthly summary...\n", Color.GREEN);
-            appendText("TOTAL DEDUCTION:\n", Color.RED);
-            displayTextChunk(F.readDeductMonth(currentMonth), true);
-            appendText("----------------------------------\n");
-            appendText("TOTAL DEPOSIT:\n", Color.RED);
-            displayTextChunk(F.readDeposMonth(currentMonth), true);
-            outputLog.setEditable(false);
+            displayMonthSum(currentMonth);
         });
         left.add(monthSum);
-        //-------------------------- WORKING ON THIS PART
-        final JLabel monthSumLabel = new JLabel("Select month:");
+        left.add(Box.createRigidArea(new Dimension(0, 5)));
+        final JLabel monthSumLabel = new JLabel("Enter month:");
         left.add(monthSumLabel);
+        final JPanel monthPanel = new JPanel();
         inputMonth = new JTextField("");
         inputMonth.setColumns(2);
-        left.add(inputMonth);
-        final JButton monthSumConfirm = new JButton("OK");
-        monthSumConfirm.addActionListener(e -> {
-            
+        monthPanel.add(inputMonth);
+        monthPanel.add(new JLabel("/"));
+        inputYear = new JTextField("");
+        inputYear.setColumns(4);
+        monthPanel.add(inputYear);
+        final JButton monthConfirm = new JButton("OK");
+        monthConfirm.addActionListener(e -> {
+            if (inputMonth.getText().matches("-?\\d+")) { // if  month is an integer
+                // WIP
+            } else {
+                appendText("Invalid input!", Color.RED);
+            }
         });
-        left.add(monthSumConfirm);
+        monthPanel.add(monthConfirm);
+        monthPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, monthConfirm.getMinimumSize().height + 5));
+        monthPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        left.add(Box.createHorizontalGlue());
+        left.add(monthPanel);
         //------------------------------
         left.add(Box.createRigidArea(new Dimension(0, 10)));
         final JButton totalSum = new JButton("Total Summary");
@@ -179,8 +196,12 @@ public class ViewGUI extends JFrame{
         });
         left.add(editDeduct);
         left.add(Box.createRigidArea(new Dimension(0, 10)));
-        final JButton delLine = new JButton("Delete Line");
-        left.add(delLine);
+        final JButton clear = new JButton("Clear console");
+        clear.addActionListener(e -> {
+            outputLog.setText("");
+            outputLog.setEditable(true);
+        });
+        left.add(clear);
         return left;
     }
     
@@ -287,5 +308,20 @@ public class ViewGUI extends JFrame{
             appendText("Data not found!");
         }
         appendText("\n");
+    }
+    
+    /**
+     * Append monthly sum to the text area.
+     * 
+     * @param month selected
+     */
+    private void displayMonthSum(final int month) {
+        appendText("Displaying monthly summary...\n", Color.GREEN);
+        appendText("TOTAL DEDUCTION:\n", Color.RED);
+        displayTextChunk(F.readDeductMonth(month), true);
+        appendText("----------------------------------\n");
+        appendText("TOTAL DEPOSIT:\n", Color.RED);
+        displayTextChunk(F.readDeposMonth(month), true);
+        outputLog.setEditable(false);
     }
 }
