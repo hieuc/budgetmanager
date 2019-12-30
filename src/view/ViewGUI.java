@@ -5,14 +5,19 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.event.ActionEvent;
+import java.awt.event.KeyEvent;
 import java.time.LocalDateTime;
+import java.time.Month;
 import java.util.List;
 
+import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
+import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -20,6 +25,7 @@ import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 import javax.swing.JTextPane;
+import javax.swing.KeyStroke;
 import javax.swing.border.EmptyBorder;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Document;
@@ -135,41 +141,7 @@ public class ViewGUI extends JFrame{
         final JPanel left = new JPanel();
         left.setBorder(new EmptyBorder(5, 5, 5, 5));
         left.setLayout(new BoxLayout(left, BoxLayout.Y_AXIS));
-        final JButton monthSum = new JButton("Monthly Summary");
-        monthSum.addActionListener(e -> {
-            appendText("Displaying monthly summary...\n", Color.GREEN);
-            final int currentMonth = LocalDateTime.now().getMonthValue();
-            final int currentYear = LocalDateTime.now().getYear();
-            displayMonthSum(currentMonth, currentYear);
-        });
-        left.add(monthSum);
-        left.add(Box.createRigidArea(new Dimension(0, 5)));
-        final JLabel monthSumLabel = new JLabel("Enter month:");
-        left.add(monthSumLabel);
-        final JPanel monthPanel = new JPanel();
-        inputMonth = new JTextField("");
-        inputMonth.setColumns(2);
-        monthPanel.add(inputMonth);
-        monthPanel.add(new JLabel("/"));
-        inputYear = new JTextField(String.valueOf(LocalDateTime.now().getYear()));
-        inputYear.setColumns(3);
-        monthPanel.add(inputYear);
-        final JButton monthConfirm = new JButton("OK");
-        monthConfirm.addActionListener(e -> {
-            try {
-                appendText("Displaying monthly summary...\n", Color.GREEN);
-                final int month = Integer.valueOf(inputMonth.getText());
-                final int year = Integer.valueOf(inputYear.getText());
-                displayMonthSum(month, year);
-            } catch (NumberFormatException e1) {
-                appendText("Wrong format of input date.\n", Color.RED);
-            }
-        });
-        monthPanel.add(monthConfirm);
-        monthPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, monthConfirm.getMinimumSize().height + 5));
-        monthPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        left.add(Box.createHorizontalGlue());
-        left.add(monthPanel);
+        addMonthFunctions(left);
         left.add(Box.createRigidArea(new Dimension(0, 10)));
         final JButton totalSum = new JButton("Total Summary");
         totalSum.addActionListener(e -> { 
@@ -335,5 +307,86 @@ public class ViewGUI extends JFrame{
         appendText(String.format(" " + LINE_FORMAT.replace("-", ""),
                 "NET:", net, ""), Color.RED);
         outputLog.setEditable(false);
+    }
+    
+    /**
+     * Add the month summary components to the panel.
+     * 
+     * @param panel
+     */
+    private void addMonthFunctions(final JPanel panel) {
+        // add default month sum button
+        final JButton monthSum = new JButton("Monthly Summary");
+        monthSum.addActionListener(new DisplayMonth(true));
+        panel.add(monthSum);
+        panel.add(Box.createRigidArea(new Dimension(0, 5)));
+        // label
+        final JLabel monthSumLabel = new JLabel("Enter month:");
+        panel.add(monthSumLabel);
+        // input month panel
+        final JPanel monthPanel = new JPanel();
+        // month input
+        inputMonth = new JTextField("");
+        inputMonth.setColumns(2);
+        inputMonth.getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0), "startSum");
+        inputMonth.getActionMap().put("startSum", new DisplayMonth(false));
+        monthPanel.add(inputMonth);
+        // separating label
+        monthPanel.add(new JLabel("/"));
+        // inputYear
+        inputYear = new JTextField(String.valueOf(LocalDateTime.now().getYear()));
+        inputYear.setColumns(3);
+        inputYear.getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0), "startSum");
+        inputYear.getActionMap().put("startSum", new DisplayMonth(false));
+        monthPanel.add(inputYear);
+        // confirm button
+        final JButton monthConfirm = new JButton("OK");
+        monthConfirm.addActionListener(new DisplayMonth(false));
+        monthPanel.add(monthConfirm);
+        // alignment setup
+        monthPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, monthConfirm.getMinimumSize().height + 5));
+        monthPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(Box.createHorizontalGlue());
+        panel.add(monthPanel);
+    }
+    /**
+     * Display month key action.
+     * 
+     * @author Victor Chau
+     * @version December 2019
+     */
+    @SuppressWarnings("serial")
+    private class DisplayMonth extends AbstractAction {
+        /** Display mode: true = default, false = custom. */
+        private boolean defaultMode;
+        
+        /** 
+         * Initialize mode.
+         * 
+         * @param defaultMode true = default, false = custom.
+         */
+        DisplayMonth(final boolean defaultMode) {
+            this.defaultMode = defaultMode;
+        }
+        
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            try {
+                appendText("Displaying monthly summary...\n", Color.GREEN);
+                int month;
+                int year;
+                if (defaultMode) {
+                    month = LocalDateTime.now().getMonthValue();
+                    year = LocalDateTime.now().getYear();
+                } else {
+                    month = Integer.valueOf(inputMonth.getText().trim());
+                    year = Integer.valueOf(inputYear.getText().trim());
+                }
+                appendText(Month.values()[month - 1].toString() + " " + year + "\n", Color.GREEN);
+                displayMonthSum(month, year);
+            } catch (NumberFormatException e1) {
+                appendText("Wrong format of input date.\n", Color.RED);
+            }
+        }
     }
 }
