@@ -28,6 +28,7 @@ import javax.swing.JTextPane;
 import javax.swing.KeyStroke;
 import javax.swing.border.EmptyBorder;
 import javax.swing.text.BadLocationException;
+import javax.swing.text.DefaultCaret;
 import javax.swing.text.Document;
 import javax.swing.text.Style;
 import javax.swing.text.StyleConstants;
@@ -72,7 +73,7 @@ public class ViewGUI extends JFrame{
     private JTextField inputYear;
 
     /**
-     * Init fields.
+     * Initialize frame.
      */
     public ViewGUI() {
         super();
@@ -81,6 +82,9 @@ public class ViewGUI extends JFrame{
         setProperties();
     }
     
+    /**
+     * Prepare Frame's properties.
+     */
     private void setProperties() {
         this.setTitle("money manager i guess");
         this.setSize(800, 500);
@@ -90,6 +94,9 @@ public class ViewGUI extends JFrame{
         this.setVisible(true);
     }
     
+    /**
+     * Prepare Frame's components.
+     */
     private void initGUI() {
         final JPanel contentP = new JPanel(new BorderLayout());
         contentP.add(makeTopPane(), BorderLayout.NORTH);
@@ -99,6 +106,11 @@ public class ViewGUI extends JFrame{
         this.setContentPane(contentP);
     }
     
+    /**
+     * Create a panel in the top area of frame.
+     * 
+     * @return top panel
+     */
     private JPanel makeTopPane() {
         final JPanel top = new JPanel();
         final JRadioButton depos = new JRadioButton("Deposit");
@@ -137,6 +149,11 @@ public class ViewGUI extends JFrame{
         return top;
     }
     
+    /**
+     * Create a panel in the left area of frame.
+     * 
+     * @return left panel
+     */
     private JPanel makeLeftPane() {
         final JPanel left = new JPanel();
         left.setBorder(new EmptyBorder(5, 5, 5, 5));
@@ -144,17 +161,9 @@ public class ViewGUI extends JFrame{
         addMonthFunctions(left);
         left.add(Box.createRigidArea(new Dimension(0, 10)));
         final JButton totalSum = new JButton("Total Summary");
-        totalSum.addActionListener(e -> { 
-            double net = 0;
+        totalSum.addActionListener(e -> {
             appendText("Displaying total summary...\n", Color.GREEN);
-            appendText("TOTAL DEDUCTION:\n", Color.RED);
-            net -= displayDeduct(true);
-            appendText("----------------------------------\n");
-            appendText("TOTAL DEPOSIT:\n", Color.RED);
-            net += displayDepos(true);
-            appendText(String.format(" " + LINE_FORMAT.replace("-", ""),
-                    "NET:", net, ""), Color.RED);
-            outputLog.setEditable(false);
+            displaySum(F.readDeduct(), F.readDepos());
         });
         left.add(totalSum);
         left.add(Box.createRigidArea(new Dimension(0, 10)));
@@ -183,6 +192,11 @@ public class ViewGUI extends JFrame{
         return left;
     }
     
+    /**
+     * Create a panel in the center area of frame.
+     * 
+     * @return mid panel
+     */
     private JPanel makeMidPane() {
         final JPanel mid = new JPanel(new BorderLayout());
         mid.setBorder(BorderFactory.createEtchedBorder());
@@ -191,6 +205,8 @@ public class ViewGUI extends JFrame{
         outputLog.setForeground(DEFAULT_TEXT_COLOR);
         outputLog.setCaretColor(DEFAULT_TEXT_COLOR);
         outputLog.setFont(new Font("monospaced", Font.PLAIN, 12));
+        DefaultCaret caret = (DefaultCaret) outputLog.getCaret();
+        caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
         mid.add(outputLog, BorderLayout.CENTER);
         final JScrollPane scroll = new JScrollPane(outputLog, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
                 JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
@@ -198,6 +214,11 @@ public class ViewGUI extends JFrame{
         return mid;
     }
     
+    /**
+     * Create a panel in the bottom area of frame.
+     * 
+     * @return bot panel
+     */
     private JPanel makeBotPane() {
         final JPanel bot = new JPanel(new BorderLayout());        
         bot.setBorder(new EmptyBorder(5, 5, 5, 5));
@@ -214,10 +235,14 @@ public class ViewGUI extends JFrame{
         return bot;
     }
     
+    /**
+     * Initialize fields of frame.
+     */
     private void initFields() {
         mode = 0;
         editMode = false;
     }
+    
     
     /**
      * Append text with default color to the log panel.
@@ -264,7 +289,7 @@ public class ViewGUI extends JFrame{
     }
     
     /**
-     * Display a lot of text. Helper method for displayDeduct and displayDepos.
+     * Display a lot of text. Helper method.
      * 
      * @param lines of text.
      * @param displaySum true to display sum, false otherwise
@@ -292,18 +317,38 @@ public class ViewGUI extends JFrame{
     }
     
     /**
-     * Append monthly sum to the text area.
+     * Display summary of a month.
      * 
-     * @param month selected
+     * @param month
+     * @param year
      */
     private void displayMonthSum(final int month, final int year) {
+        displaySum(F.readDeductMonth(month, year), F.readDeposMonth(month, year));
+    }
+    
+    /**
+     * Display summary of a year.
+     * 
+     * @param year
+     */
+    private void displayYearSum(final int year) {
+        displaySum(F.readDeductYear(year), F.readDeposYear(year));
+    }
+    
+    /**
+     * Append monthly sum to the text area.
+     * 
+     * @param deduct list of lines to display as deduction
+     * @param depos list of lines to display as deposit
+     */
+    private void displaySum(final List<String> deduct, final List<String> depos) {
         final boolean displaySum = true;
         double net = 0;
         appendText("TOTAL DEDUCTION:\n", Color.RED);
-        net -= displayTextChunk(F.readDeductMonth(month, year), displaySum);
+        net -= displayTextChunk(deduct, displaySum);
         appendText("----------------------------------\n");
         appendText("TOTAL DEPOSIT:\n", Color.RED);
-        net += displayTextChunk(F.readDeposMonth(month, year), displaySum);
+        net += displayTextChunk(depos, displaySum);
         appendText(String.format(" " + LINE_FORMAT.replace("-", ""),
                 "NET:", net, ""), Color.RED);
         outputLog.setEditable(false);
@@ -321,7 +366,7 @@ public class ViewGUI extends JFrame{
         panel.add(monthSum);
         panel.add(Box.createRigidArea(new Dimension(0, 5)));
         // label
-        final JLabel monthSumLabel = new JLabel("Enter month:");
+        final JLabel monthSumLabel = new JLabel("Enter month/year:");
         panel.add(monthSumLabel);
         // input month panel
         final JPanel monthPanel = new JPanel();
@@ -349,8 +394,9 @@ public class ViewGUI extends JFrame{
         panel.add(Box.createHorizontalGlue());
         panel.add(monthPanel);
     }
+    
     /**
-     * Display month key action.
+     * Display month key action class.
      * 
      * @author Victor Chau
      * @version December 2019
@@ -371,21 +417,26 @@ public class ViewGUI extends JFrame{
         
         @Override
         public void actionPerformed(ActionEvent e) {
+            int month;
+            int year = -1;
             try {
                 appendText("Displaying monthly summary...\n", Color.GREEN);
-                int month;
-                int year;
                 if (defaultMode) {
                     month = LocalDateTime.now().getMonthValue();
                     year = LocalDateTime.now().getYear();
                 } else {
-                    month = Integer.valueOf(inputMonth.getText().trim());
                     year = Integer.valueOf(inputYear.getText().trim());
+                    month = Integer.valueOf(inputMonth.getText().trim());
                 }
                 appendText(Month.values()[month - 1].toString() + " " + year + "\n", Color.GREEN);
                 displayMonthSum(month, year);
             } catch (NumberFormatException e1) {
-                appendText("Wrong format of input date.\n", Color.RED);
+                if (inputMonth.getText().isBlank() && year != -1) {
+                    appendText("YEAR " + year + "\n", Color.GREEN);
+                    displayYearSum(year);
+                } else {
+                    appendText("Wrong format of input date.\n", Color.RED); 
+                }
             }
         }
     }

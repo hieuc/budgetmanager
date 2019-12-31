@@ -98,12 +98,16 @@ public final class F {
         return readMonth(readDepos(), month, year);
     }
     
-    /*
-     * NOTE: readmonth should be able to handle year input.
-     * flow: binary search for year, find start and end index, binary search for month, find start and end index.
-     */
-    private static List<String> readMonth(final List<String> lines, final int month, final int year) {
-        // search for year index
+    public static List<String> readDeductYear(final int year){
+        return readYear(readDeduct(), year);
+    }
+    
+    public static List<String> readDeposYear(final int year){
+        return readYear(readDepos(), year);
+    }
+    
+    private static List<String> readYear(final List<String> lines, final int year) {
+     // search for year index
         int index = binSearch(lines, 0, lines.size() - 1, year, false);
         if (index == -1) {
             return Arrays.asList("Data not found!");
@@ -112,29 +116,39 @@ public final class F {
         // search index range
         int lower = index;
         int upper = index;
-        while (getMY(lines.get(lower - 1), false) == year) {
+        while (lower > 0 && getMY(lines.get(lower - 1), false) == year) {
             lower--;
         }
         while (upper < lines.size() - 1 && getMY(lines.get(upper + 1), false) == year) {
             upper++;
         }
         
+        return new ArrayList<String>(lines.subList(lower, upper + 1));
+    }
+    
+    /*
+     * NOTE: readmonth should be able to handle year input.
+     * flow: binary search for year, find start and end index, binary search for month, find start and end index.
+     */
+    private static List<String> readMonth(final List<String> lines, final int month, final int year) {
+        final List<String> yearLines = readYear(lines, year);
+        
         // search for month index
-        index = binSearch(lines, lower, upper, month, true);
+        int index = binSearch(yearLines, 0, yearLines.size() - 1, month, true);
         if (index == -1) {
             return Arrays.asList("Data not found!");
         }
         // search for index range 
-        lower = index;
-        upper = index;
-        while (getMY(lines.get(lower - 1), true) == month) {
+        int lower = index;
+        int upper = index;
+        while (lower > 0 && getMY(yearLines.get(lower - 1), true) == month) {
             lower--;
         }
-        while (upper < lines.size() - 1 && getMY(lines.get(upper + 1), true) == month) {
+        while (upper < yearLines.size() - 1 && getMY(yearLines.get(upper + 1), true) == month) {
             upper++;
         }
         
-        return new ArrayList<String>(lines.subList(lower, upper + 1));
+        return new ArrayList<String>(yearLines.subList(lower, upper + 1));
     }
     
     /**
